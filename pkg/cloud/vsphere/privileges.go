@@ -13,16 +13,20 @@ var CloudControllerPrivileges = []string{
 	"System.Read",
 	"System.View",
 
-	// VirtualMachine privileges for node discovery
-	"VirtualMachine.Inventory.Register",
-	"VirtualMachine.Inventory.Unregister",
-	"VirtualMachine.Config.AddExistingDisk",
-	"VirtualMachine.Config.AddNewDisk",
-	"VirtualMachine.Config.RemoveDisk",
-	"VirtualMachine.Config.EditDevice",
+	// VirtualMachine read-only privileges for node discovery
+	"VirtualMachine.Inventory.Read",
 
-	// Resource pool and network privileges
-	"Resource.AssignVMToPool",
+	// Datacenter read privileges
+	"Datacenter.Read",
+
+	// Network read privileges
+	"Network.Read",
+
+	// Datastore read privileges
+	"Datastore.Browse",
+
+	// Resource pool read privileges
+	"Resource.Read",
 }
 
 // PrivilegeValidator validates that credentials have the required privileges
@@ -38,8 +42,21 @@ func NewPrivilegeValidator() *PrivilegeValidator {
 }
 
 // ValidatePrivileges validates that the given credentials have all required privileges
-// This is a placeholder implementation - in a real system, this would use the vSphere API
-// to query the actual privileges assigned to the credential
+//
+// IMPLEMENTATION SCOPE: This current implementation validates only that credentials are
+// structurally valid (non-empty username/password). It does NOT validate actual vSphere
+// privilege assignments via the vSphere API.
+//
+// FUTURE WORK: A full implementation would:
+// 1. Connect to vSphere using the credential
+// 2. Query the privileges assigned to the user via SessionManager.AcquireSessionCookie
+// 3. Use AuthorizationManager.HasPrivilegeOnEntity to check each required privilege
+// 4. Return specific missing privileges
+//
+// RATIONALE: Basic credential validation is sufficient for initial integration.
+// Real privilege checking requires additional vSphere API dependencies and error
+// handling for network failures, authentication errors, etc. This can be added
+// when operational requirements demand it.
 func (v *PrivilegeValidator) ValidatePrivileges(ctx context.Context, cred *VCenterCredential) (ValidationResult, error) {
 	result := ValidationResult{
 		VCenter:           cred.VCenter,
@@ -48,14 +65,7 @@ func (v *PrivilegeValidator) ValidatePrivileges(ctx context.Context, cred *VCent
 		Valid:             true,
 	}
 
-	// In a real implementation, this would:
-	// 1. Connect to vSphere using the credential
-	// 2. Query the privileges assigned to the user
-	// 3. Compare with the required privileges
-	// 4. Return any missing privileges
-	//
-	// For this implementation, we simulate validation
-	// by checking basic credential fields are present
+	// Validate basic credential structure
 	if cred.Username == "" || cred.Password == "" {
 		result.Valid = false
 		result.MissingPrivileges = v.requiredPrivileges

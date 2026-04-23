@@ -3,6 +3,7 @@ package vsphere
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
